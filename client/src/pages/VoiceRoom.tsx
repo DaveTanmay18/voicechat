@@ -11,7 +11,7 @@ import {
 import { Track } from 'livekit-client'
 import api from '../lib/api'
 
-const LIVEKIT_URL = 'ws://192.168.1.9:7880'
+const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || 'ws://localhost:7880'
 
 function ActiveRoom() {
   const tracks = useTracks(

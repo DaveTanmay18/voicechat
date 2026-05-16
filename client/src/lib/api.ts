@@ -1,16 +1,12 @@
 import axios from 'axios'
 
-const isNgrok = window.location.hostname.includes('ngrok-free.app') || 
-                window.location.hostname.includes('ngrok-free.dev')
-const isLocalhost = window.location.hostname === 'localhost'
+const isProd = import.meta.env.PROD
 
-const baseURL = isLocalhost
-  ? '/api'
-  : isNgrok
-    ? '/api'
-    : 'http://192.168.1.9:4000'
-
-const api = axios.create({ baseURL })
+const api = axios.create({
+  baseURL: isProd
+    ? import.meta.env.VITE_API_URL
+    : '/api'
+})
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken')

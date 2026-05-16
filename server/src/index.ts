@@ -26,6 +26,7 @@ app.register(cors, {
   origin: [
     'http://localhost:3000',
     'http://192.168.1.9:3000',
+    'https://voicechat-client.vercel.app',
     /\.vercel\.app$/,
   ]
 })

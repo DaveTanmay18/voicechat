@@ -28,7 +28,10 @@ app.register(cors, {
     'http://192.168.1.9:3000',
     'https://voicechat-client.vercel.app',
     /\.vercel\.app$/,
-  ]
+  ],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
 })
 
 // Global error handler

@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -16,14 +16,14 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      await login(email, password)
-      navigate('/dashboard')
+        await login(identifier, password)
+        navigate('/dashboard')
     } catch (err: any) {
-      const msg = err.response?.data?.error || 'Login failed'
-      setError(msg)
-      toast.error(msg)
+        const msg = err.response?.data?.error || 'Login failed'
+        setError(msg)
+        toast.error(msg)
     } finally {
-      setLoading(false)
+        setLoading(false)
     }
   }
 
@@ -35,14 +35,14 @@ export default function Login() {
         {error && <div style={styles.error}>{error}</div>}
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.field}>
-            <label style={styles.label}>Email</label>
+            <label style={styles.label}>Email or Username</label>
             <input
-              style={styles.input}
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
+                style={styles.input}
+                type="text"
+                value={identifier}
+                onChange={e => setIdentifier(e.target.value)}
+                placeholder="you@example.com or cooluser"
+                required
             />
           </div>
           <div style={styles.field}>
@@ -61,7 +61,10 @@ export default function Login() {
           </button>
         </form>
         <p style={styles.switch}>
-          Don't have an account? <Link to="/register" style={styles.link}>Sign up</Link>
+        <Link to="/forgot-password" style={styles.link}>Forgot password?</Link>
+        </p>
+        <p style={styles.switch}>
+        Don't have an account? <Link to="/register" style={styles.link}>Sign up</Link>
         </p>
       </div>
     </div>

@@ -6,6 +6,7 @@ import 'dotenv/config'
 import authRoutes from './routes/auth'
 import roomRoutes from './routes/rooms'
 import { authenticate } from './middleware/authenticate'
+import emailRoutes from './routes/email'
 
 const app = Fastify({ logger: true })
 
@@ -59,6 +60,9 @@ app.register(async (instance) => {
   })
   instance.register(authRoutes, { prefix: '/v1/auth' })
 })
+
+// Email routes
+app.register(emailRoutes, { prefix: '/v1' })
 
 // Room routes
 app.register(roomRoutes, { prefix: '/v1/rooms' })

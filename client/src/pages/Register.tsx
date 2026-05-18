@@ -1,24 +1,23 @@
 import { useState } from 'react'
-import { useAuth } from '../context/AuthContext'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import api from '../lib/api'
 import toast from 'react-hot-toast'
 
 export default function Register() {
-  const { register } = useAuth()
-  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [registered, setRegistered] = useState(false)
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      await register(email, username, password)
-      navigate('/dashboard')
+      await api.post('/v1/auth/register', { email, username, password })
+      setRegistered(true)
     } catch (err: any) {
       const msg = err.response?.data?.error || 'Registration failed'
       setError(msg)
@@ -26,6 +25,23 @@ export default function Register() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (registered) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.card}>
+          <div style={{ fontSize: 48, textAlign: 'center', marginBottom: 16 }}>📧</div>
+          <h2 style={{ color: '#fff', fontSize: 20, fontWeight: 600, textAlign: 'center', margin: '0 0 12px' }}>Check your email</h2>
+          <p style={{ color: '#888', fontSize: 14, textAlign: 'center', lineHeight: 1.6 }}>
+            We sent a verification link to <strong style={{ color: '#fff' }}>{email}</strong>. Click the link to activate your account.
+          </p>
+          <p style={{ textAlign: 'center', marginTop: 24 }}>
+            <Link to="/login" style={styles.link}>Back to login</Link>
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (

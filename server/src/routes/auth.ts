@@ -1,8 +1,10 @@
 import { FastifyInstance } from 'fastify'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import prisma from '../lib/prisma'
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../lib/jwt'
 import { registerSchema, loginSchema, refreshSchema } from '../lib/schemas'
+import { sendVerificationEmail } from '../lib/email'
 
 export default async function authRoutes(app: FastifyInstance) {
 
@@ -26,15 +28,23 @@ export default async function authRoutes(app: FastifyInstance) {
       data: { email, username, password: hashed }
     })
 
-    const accessToken = signAccessToken(user.id)
-    const refreshToken = signRefreshToken(user.id)
-
-    await prisma.refreshToken.create({
-      data: { token: refreshToken, userId: user.id, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
-    })
+    try {
+      const verifyToken = crypto.randomBytes(32).toString('hex')
+      await prisma.token.create({
+        data: {
+          token: verifyToken,
+          type: 'EMAIL_VERIFICATION',
+          userId: user.id,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        }
+      })
+      await sendVerificationEmail(user.email, verifyToken)
+    } catch (tokenError) {
+      app.log.error(tokenError)
+    }
 
     return reply.status(201).send({
-      accessToken, refreshToken,
+      message: 'Account created! Please check your email to verify your account.',
       user: { id: user.id, email: user.email, username: user.username }
     })
   })
@@ -43,30 +53,43 @@ export default async function authRoutes(app: FastifyInstance) {
   app.post('/login', async (request, reply) => {
     const result = loginSchema.safeParse(request.body)
     if (!result.success) {
-      return reply.status(400).send({ error: result.error.issues[0].message })
+        return reply.status(400).send({ error: result.error.issues[0].message })
     }
-    const { email, password } = result.data
+    const { identifier, password } = result.data
 
-    const user = await prisma.user.findUnique({ where: { email } })
+    // Find by email or username
+    const user = await prisma.user.findFirst({
+        where: {
+        OR: [
+            { email: identifier.toLowerCase() },
+            { username: identifier.toLowerCase() }
+        ]
+        }
+    })
+
     if (!user) {
-      return reply.status(401).send({ error: 'Invalid email or password' })
+        return reply.status(401).send({ error: 'Invalid email/username or password' })
     }
 
     const valid = await bcrypt.compare(password, user.password)
     if (!valid) {
-      return reply.status(401).send({ error: 'Invalid email or password' })
+        return reply.status(401).send({ error: 'Invalid email/username or password' })
+    }
+
+    if (!user.verified) {
+        return reply.status(403).send({ error: 'Please verify your email before logging in' })
     }
 
     const accessToken = signAccessToken(user.id)
     const refreshToken = signRefreshToken(user.id)
 
     await prisma.refreshToken.create({
-      data: { token: refreshToken, userId: user.id, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
+        data: { token: refreshToken, userId: user.id, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
     })
 
     return reply.send({
-      accessToken, refreshToken,
-      user: { id: user.id, email: user.email, username: user.username }
+        accessToken, refreshToken,
+        user: { id: user.id, email: user.email, username: user.username }
     })
   })
 

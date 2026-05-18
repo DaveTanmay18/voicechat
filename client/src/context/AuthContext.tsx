@@ -11,7 +11,7 @@ interface User {
 interface AuthContextType {
   user: User | null
   accessToken: string | null
-  login: (email: string, password: string) => Promise<void>
+  login: (identifier: string, password: string) => Promise<void>
   register: (email: string, username: string, password: string) => Promise<void>
   logout: () => void
   loading: boolean
@@ -34,8 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false)
   }, [])
 
-  const login = async (email: string, password: string) => {
-    const res = await api.post('/v1/auth/login', { email, password })
+  const login = async (identifier: string, password: string) => {
+    const res = await api.post('/v1/auth/login', { identifier, password })
     const { accessToken, refreshToken, user } = res.data
     localStorage.setItem('accessToken', accessToken)
     localStorage.setItem('refreshToken', refreshToken)
@@ -45,13 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const register = async (email: string, username: string, password: string) => {
-    const res = await api.post('/v1/auth/register', { email, username, password })
-    const { accessToken, refreshToken, user } = res.data
-    localStorage.setItem('accessToken', accessToken)
-    localStorage.setItem('refreshToken', refreshToken)
-    localStorage.setItem('user', JSON.stringify(user))
-    setAccessToken(accessToken)
-    setUser(user)
+    await api.post('/v1/auth/register', { email, username, password })
   }
 
   const logout = () => {

@@ -9,8 +9,10 @@ export default defineConfig({
     allowedHosts: ['jargon-spindle-mulch.ngrok-free.dev'],
     proxy: {
       '/api': {
-        target: 'http://192.168.1.9:4000',
+        target: 'http://192.168.29.17:4000',
         changeOrigin: true,
+        timeout: 30000,
+        proxyTimeout: 30000,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
     }

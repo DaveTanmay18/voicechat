@@ -12,10 +12,12 @@ model User {
   password      String
   username      String         @unique
   verified      Boolean        @default(false)
+  isAdmin       Boolean        @default(false)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   refreshTokens RefreshToken[]
   rooms         Room[]
+  tokens        Token[]
 }
 
 model RefreshToken {
@@ -34,4 +36,19 @@ model Room {
   createdBy   String
   user        User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
+}
+
+model Token {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  type      TokenType
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
 }

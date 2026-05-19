@@ -7,6 +7,7 @@ export default function Register() {
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [phone, setPhone] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [registered, setRegistered] = useState(false)
@@ -16,7 +17,7 @@ export default function Register() {
     setError('')
     setLoading(true)
     try {
-      await api.post('/v1/auth/register', { email, username, password })
+      await api.post('/v1/auth/register', { email, username, password, phone: phone || undefined })
       setRegistered(true)
     } catch (err: any) {
       const msg = err.response?.data?.error || 'Registration failed'
@@ -82,6 +83,16 @@ export default function Register() {
               onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
               required
+            />
+          </div>
+          <div style={styles.field}>
+            <label style={styles.label}>Phone number <span style={{ color: '#555' }}>(optional, for WhatsApp invites)</span></label>
+            <input
+                style={styles.input}
+                type="tel"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="+91XXXXXXXXXX"
             />
           </div>
           <button style={styles.button} type="submit" disabled={loading}>

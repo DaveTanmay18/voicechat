@@ -25,7 +25,7 @@ export default async function authRoutes(app: FastifyInstance) {
 
     const hashed = await bcrypt.hash(password, 12)
     const user = await prisma.user.create({
-      data: { email, username, password: hashed }
+      data: { email, username, password: hashed, phone: result.data.phone }
     })
 
     try {

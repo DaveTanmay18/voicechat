@@ -4,6 +4,7 @@ export const registerSchema = z.object({
   email: z.email('Invalid email address'),
   username: z.string().min(3, 'Username must be at least 3 characters').max(20, 'Username must be at most 20 characters').regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers and underscores'),
   password: z.string().min(6, 'Password must be at least 6 characters').max(100, 'Password too long'),
+  phone: z.string().regex(/^\+?[0-9]{10,15}$/, 'Invalid phone number').optional(),
 })
 
 export const loginSchema = z.object({
@@ -18,6 +19,12 @@ export const refreshSchema = z.object({
 export const createRoomSchema = z.object({
   name: z.string().min(1, 'Room name is required').max(50, 'Room name must be at most 50 characters'),
   description: z.string().max(200, 'Description must be at most 200 characters').optional(),
+  type: z.enum(['PUBLIC', 'PRIVATE', 'INVITE_ONLY']).default('PUBLIC'),
+  password: z.string().min(4, 'Password must be at least 4 characters').optional(),
+})
+
+export const joinPrivateRoomSchema = z.object({
+  password: z.string().min(1, 'Password is required'),
 })
 
 export type RegisterInput = z.infer<typeof registerSchema>

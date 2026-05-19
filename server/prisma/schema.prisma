@@ -11,6 +11,7 @@ model User {
   email         String         @unique
   password      String
   username      String         @unique
+  phone         String?
   verified      Boolean        @default(false)
   isAdmin       Boolean        @default(false)
   createdAt     DateTime       @default(now())
@@ -18,6 +19,7 @@ model User {
   refreshTokens RefreshToken[]
   rooms         Room[]
   tokens        Token[]
+  roomMembers   RoomMember[]
 }
 
 model RefreshToken {
@@ -30,12 +32,37 @@ model RefreshToken {
 }
 
 model Room {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   name        String
   description String?
+  type        RoomType    @default(PUBLIC)
+  password    String?
   createdBy   String
-  user        User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
+  user        User        @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  members     RoomMember[]
+  invites     RoomInvite[]
+}
+
+model RoomMember {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([roomId, userId])
+}
+
+model RoomInvite {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdBy String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
 
 model Token {
@@ -46,6 +73,12 @@ model Token {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime  @default(now())
+}
+
+enum RoomType {
+  PUBLIC
+  PRIVATE
+  INVITE_ONLY
 }
 
 enum TokenType {

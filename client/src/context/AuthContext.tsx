@@ -42,6 +42,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('user', JSON.stringify(user))
     setAccessToken(accessToken)
     setUser(user)
+
+    // Check for pending invite
+    const pendingInvite = localStorage.getItem('pendingInviteToken')
+    if (pendingInvite) {
+        localStorage.removeItem('pendingInviteToken')
+        window.location.href = `/join/${pendingInvite}`
+    }
   }
 
   const register = async (email: string, username: string, password: string) => {

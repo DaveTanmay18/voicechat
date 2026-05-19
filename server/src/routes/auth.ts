@@ -6,6 +6,17 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../lib/jw
 import { registerSchema, loginSchema, refreshSchema } from '../lib/schemas'
 import { sendVerificationEmail } from '../lib/email'
 
+async function generateUniqueRefreshToken(userId: string): Promise<string> {
+  let attempts = 0
+  while (true) {
+    const token = signRefreshToken(userId)
+    const exists = await prisma.refreshToken.findUnique({ where: { token } })
+    if (!exists) return token
+    attempts++
+    if (attempts > 5) throw new Error('Failed to generate unique refresh token')
+  }
+}
+
 export default async function authRoutes(app: FastifyInstance) {
 
   // REGISTER
@@ -53,43 +64,42 @@ export default async function authRoutes(app: FastifyInstance) {
   app.post('/login', async (request, reply) => {
     const result = loginSchema.safeParse(request.body)
     if (!result.success) {
-        return reply.status(400).send({ error: result.error.issues[0].message })
+      return reply.status(400).send({ error: result.error.issues[0].message })
     }
     const { identifier, password } = result.data
 
-    // Find by email or username
     const user = await prisma.user.findFirst({
-        where: {
+      where: {
         OR: [
-            { email: identifier.toLowerCase() },
-            { username: identifier.toLowerCase() }
+          { email: identifier.toLowerCase() },
+          { username: identifier.toLowerCase() }
         ]
-        }
+      }
     })
 
     if (!user) {
-        return reply.status(401).send({ error: 'Invalid email/username or password' })
+      return reply.status(401).send({ error: 'Invalid email/username or password' })
     }
 
     const valid = await bcrypt.compare(password, user.password)
     if (!valid) {
-        return reply.status(401).send({ error: 'Invalid email/username or password' })
+      return reply.status(401).send({ error: 'Invalid email/username or password' })
     }
 
     if (!user.verified) {
-        return reply.status(403).send({ error: 'Please verify your email before logging in' })
+      return reply.status(403).send({ error: 'Please verify your email before logging in' })
     }
 
     const accessToken = signAccessToken(user.id)
-    const refreshToken = signRefreshToken(user.id)
+    const refreshToken = await generateUniqueRefreshToken(user.id)
 
     await prisma.refreshToken.create({
-        data: { token: refreshToken, userId: user.id, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
+      data: { token: refreshToken, userId: user.id, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
     })
 
     return reply.send({
-        accessToken, refreshToken,
-        user: { id: user.id, email: user.email, username: user.username }
+      accessToken, refreshToken,
+      user: { id: user.id, email: user.email, username: user.username }
     })
   })
 
@@ -116,7 +126,7 @@ export default async function authRoutes(app: FastifyInstance) {
     await prisma.refreshToken.delete({ where: { token: refreshToken } })
 
     const newAccessToken = signAccessToken(payload.userId)
-    const newRefreshToken = signRefreshToken(payload.userId)
+    const newRefreshToken = await generateUniqueRefreshToken(payload.userId)
 
     await prisma.refreshToken.create({
       data: { token: newRefreshToken, userId: payload.userId, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }

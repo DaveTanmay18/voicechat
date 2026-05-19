@@ -325,8 +325,6 @@ npx prisma migrate deploy
 
 **Tanmay Dave** — [@DaveTanmay18](https://github.com/DaveTanmay18)
 
-Built from scratch across 5 phases using Claude as a development assistant.
-
 ---
 
 ## 📄 License

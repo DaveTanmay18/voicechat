@@ -58,25 +58,18 @@ function ParticipantCard({ participant }: { participant: Participant }) {
 // Grid of participants
 function ActiveRoom() {
   const participants = useParticipants()
+  const count = participants.length
+
+  const getGridStyle = (): React.CSSProperties => {
+    if (count <= 1) return { gridTemplateColumns: '1fr', gridTemplateRows: '1fr' }
+    if (count === 2) return { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr' }
+    if (count <= 4) return { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr' }
+    return { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr 1fr' }
+  }
 
   return (
     <div style={styles.activeRoom}>
-      {/* Participant grid — max 6 */}
-      <div style={{
-        ...styles.grid,
-        gridTemplateColumns: participants.length <= 1
-          ? '1fr'
-          : participants.length <= 2
-            ? '1fr 1fr'
-            : participants.length <= 4
-              ? '1fr 1fr'
-              : '1fr 1fr 1fr',
-        gridTemplateRows: participants.length <= 2
-          ? '1fr'
-          : participants.length <= 4
-            ? '1fr 1fr'
-            : '1fr 1fr',
-      }}>
+      <div style={{ ...styles.grid, ...getGridStyle() }}>
         {participants.slice(0, 6).map(p => (
           <ParticipantCard key={p.identity} participant={p} />
         ))}
@@ -85,7 +78,7 @@ function ActiveRoom() {
       {/* Participant list below */}
       <div style={styles.participantBar}>
         <span style={styles.participantBarLabel}>
-          {participants.length} in room
+          {count} in room
         </span>
         <div style={styles.participantList}>
           {participants.map(p => (
@@ -171,9 +164,9 @@ const styles: Record<string, React.CSSProperties> = {
   roomName: { color: '#fff', fontSize: 16, fontWeight: 600 },
   leaveBtn: { background: '#3d1515', border: '1px solid #5a2020', borderRadius: 8, padding: '7px 16px', color: '#f87171', fontSize: 13, fontWeight: 500, cursor: 'pointer' },
   activeRoom: { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' },
-  grid: { display: 'grid', flex: 1, gap: 8, padding: 12, overflow: 'hidden' },
-  participantCard: { borderRadius: 12, overflow: 'hidden', background: '#1a1a1e', position: 'relative', transition: 'border 0.2s, box-shadow 0.2s', minHeight: 120 },
-  avatarBox: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 120 },
+  grid: { display: 'grid', flex: 1, gap: 6, padding: 8, overflow: 'hidden', alignContent: 'stretch' },
+  participantCard: { borderRadius: 12, overflow: 'hidden', background: '#1a1a1e', position: 'relative', transition: 'border 0.2s, box-shadow 0.2s', minHeight: 0 },
+  avatarBox: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 80 },
   avatar: { width: 64, height: 64, borderRadius: '50%', background: '#534AB7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: '#fff' },
   video: { width: '100%', height: '100%', objectFit: 'cover' },
   nameTag: { position: 'absolute', bottom: 8, left: 8, right: 8, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(0,0,0,0.6)', borderRadius: 6, padding: '4px 8px', fontSize: 12, color: '#fff' },

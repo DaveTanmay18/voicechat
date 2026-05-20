@@ -67,6 +67,14 @@ function ActiveRoom({ roomId, username }: { roomId: string, username: string }) 
   const socketRef = useRef<Socket | null>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth)
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   useEffect(() => {
     const token = localStorage.getItem('accessToken')
     const socket = io(SOCKET_URL, { auth: { token } })
@@ -106,6 +114,17 @@ function ActiveRoom({ roomId, username }: { roomId: string, username: string }) 
   }
 
   const getGridStyle = (): React.CSSProperties => {
+    const isMobile = windowWidth <= 768
+    
+    if (isMobile) {
+        // On mobile — always stack vertically in 1 column
+        if (count <= 1) return { gridTemplateColumns: '1fr', gridTemplateRows: '1fr' }
+        if (count <= 2) return { gridTemplateColumns: '1fr', gridTemplateRows: '1fr 1fr' }
+        if (count <= 4) return { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr' }
+        return { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr 1fr' }
+    }
+
+    // Desktop
     if (count <= 1) return { gridTemplateColumns: '1fr', gridTemplateRows: '1fr' }
     if (count === 2) return { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr' }
     if (count <= 4) return { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr' }

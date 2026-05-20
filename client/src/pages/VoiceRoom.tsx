@@ -22,7 +22,7 @@ interface ChatMessage {
   timestamp: number
 }
 
-function ParticipantCard({ participant }: { participant: Participant }) {
+function ParticipantCard({ participant, isMobile }: { participant: Participant, isMobile: boolean }) {
   const isSpeaking = useIsSpeaking(participant)
   const tracks = useTracks(
     [{ source: Track.Source.Camera, withPlaceholder: true }],
@@ -35,6 +35,8 @@ function ParticipantCard({ participant }: { participant: Participant }) {
       ...styles.participantCard,
       border: isSpeaking ? '2px solid #1D9E75' : '2px solid #2a2a30',
       boxShadow: isSpeaking ? '0 0 12px rgba(29,158,117,0.4)' : 'none',
+      minHeight: isMobile ? 200 : 0,
+      height: isMobile ? 200 : 'auto',
     }}>
       {hasVideo ? (
         <video
@@ -115,13 +117,10 @@ function ActiveRoom({ roomId, username }: { roomId: string, username: string }) 
 
   const getGridStyle = (): React.CSSProperties => {
     const isMobile = windowWidth <= 768
-    
+
     if (isMobile) {
-        // On mobile — always stack vertically in 1 column
-        if (count <= 1) return { gridTemplateColumns: '1fr', gridTemplateRows: '1fr' }
-        if (count <= 2) return { gridTemplateColumns: '1fr', gridTemplateRows: '1fr 1fr' }
-        if (count <= 4) return { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr' }
-        return { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr 1fr' }
+        // Mobile — always single column, stacked vertically
+        return { gridTemplateColumns: '1fr' }
     }
 
     // Desktop
@@ -138,7 +137,7 @@ function ActiveRoom({ roomId, username }: { roomId: string, username: string }) 
         <div style={{ ...styles.voiceArea, width: showChat ? '60%' : '100%' }}>
           <div style={{ ...styles.grid, ...getGridStyle() }}>
             {participants.slice(0, 6).map(p => (
-              <ParticipantCard key={p.identity} participant={p} />
+                <ParticipantCard key={p.identity} participant={p} isMobile={windowWidth <= 768} />
             ))}
           </div>
 
@@ -289,7 +288,7 @@ const styles: Record<string, React.CSSProperties> = {
   activeRoom: { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' },
   mainArea: { display: 'flex', flex: 1, overflow: 'hidden' },
   voiceArea: { display: 'flex', flexDirection: 'column', transition: 'width 0.3s', overflow: 'hidden' },
-  grid: { display: 'grid', flex: 1, gap: 6, padding: 8, overflow: 'hidden', alignContent: 'stretch' },
+  grid: { display: 'grid', flex: 1, gap: 6, padding: 8, overflowY: 'auto', overflowX: 'hidden', alignContent: 'start' },
   participantCard: { borderRadius: 12, overflow: 'hidden', background: '#1a1a1e', position: 'relative', transition: 'border 0.2s, box-shadow 0.2s', minHeight: 0 },
   avatarBox: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 80 },
   avatar: { width: 56, height: 56, borderRadius: '50%', background: '#534AB7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, color: '#fff' },

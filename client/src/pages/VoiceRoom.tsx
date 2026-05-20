@@ -22,7 +22,7 @@ interface ChatMessage {
   timestamp: number
 }
 
-function ParticipantCard({ participant, isMobile }: { participant: Participant, isMobile: boolean }) {
+function ParticipantCard({ participant, isMobile, count }: { participant: Participant, isMobile: boolean, count: number }) {
   const isSpeaking = useIsSpeaking(participant)
   const tracks = useTracks(
     [{ source: Track.Source.Camera, withPlaceholder: true }],
@@ -35,8 +35,8 @@ function ParticipantCard({ participant, isMobile }: { participant: Participant, 
       ...styles.participantCard,
       border: isSpeaking ? '2px solid #1D9E75' : '2px solid #2a2a30',
       boxShadow: isSpeaking ? '0 0 12px rgba(29,158,117,0.4)' : 'none',
-      minHeight: isMobile ? 200 : 0,
-      height: isMobile ? 200 : 'auto',
+      minHeight: isMobile && count === 2 ? '45vh' : isMobile ? 160 : 0,
+      height: isMobile && count === 2 ? '45vh' : isMobile ? 160 : 'auto',
     }}>
       {hasVideo ? (
         <video
@@ -119,8 +119,10 @@ function ActiveRoom({ roomId, username }: { roomId: string, username: string }) 
     const isMobile = windowWidth <= 768
 
     if (isMobile) {
-        // Mobile — always single column, stacked vertically
-        return { gridTemplateColumns: '1fr' }
+        if (count <= 1) return { gridTemplateColumns: '1fr', gridTemplateRows: '1fr' }
+        if (count === 2) return { gridTemplateColumns: '1fr', gridTemplateRows: '1fr 1fr' }
+        if (count <= 4) return { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr' }
+        return { gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr 1fr' }
     }
 
     // Desktop
@@ -135,14 +137,14 @@ function ActiveRoom({ roomId, username }: { roomId: string, username: string }) 
       <div style={styles.mainArea}>
         {/* Voice grid */}
         <div style={{ ...styles.voiceArea, width: showChat ? '60%' : '100%' }}>
-          <div style={{ ...styles.grid, ...getGridStyle() }}>
+          <div style={{ ...styles.grid, ...getGridStyle(), alignContent: count === 2 && windowWidth <= 768 ? 'stretch' : 'start' }}>
             {participants.slice(0, 6).map(p => (
-                <ParticipantCard key={p.identity} participant={p} isMobile={windowWidth <= 768} />
+                <ParticipantCard key={p.identity} participant={p} isMobile={windowWidth <= 768} count={count} />
             ))}
           </div>
 
           {/* Participant bar */}
-          <div style={styles.participantBar}>
+          {/* <div style={styles.participantBar}>
             <span style={styles.participantBarLabel}>{count} in room</span>
             <div style={styles.participantList}>
               {participants.map(p => (
@@ -153,7 +155,7 @@ function ActiveRoom({ roomId, username }: { roomId: string, username: string }) 
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Chat panel */}
@@ -289,19 +291,19 @@ const styles: Record<string, React.CSSProperties> = {
   mainArea: { display: 'flex', flex: 1, overflow: 'hidden' },
   voiceArea: { display: 'flex', flexDirection: 'column', transition: 'width 0.3s', overflow: 'hidden' },
   grid: { display: 'grid', flex: 1, gap: 6, padding: 8, overflowY: 'auto', overflowX: 'hidden', alignContent: 'start' },
-  participantCard: { borderRadius: 12, overflow: 'hidden', background: '#1a1a1e', position: 'relative', transition: 'border 0.2s, box-shadow 0.2s', minHeight: 0 },
+  participantCard: { borderRadius: 12, overflow: 'hidden', background: '#1a1a1e', position: 'relative', transition: 'border 0.2s, box-shadow 0.2s' },
   avatarBox: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: 80 },
   avatar: { width: 56, height: 56, borderRadius: '50%', background: '#534AB7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, color: '#fff' },
   video: { width: '100%', height: '100%', objectFit: 'cover' },
   nameTag: { position: 'absolute', bottom: 8, left: 8, right: 8, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(0,0,0,0.6)', borderRadius: 6, padding: '4px 8px', fontSize: 12, color: '#fff' },
   speakingDot: { color: '#1D9E75', fontSize: 10 },
   youTag: { marginLeft: 'auto', background: '#534AB7', color: '#fff', fontSize: 10, padding: '1px 6px', borderRadius: 4 },
-  participantBar: { background: '#111114', borderTop: '1px solid #2a2a30', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, overflowX: 'auto' },
-  participantBarLabel: { color: '#555', fontSize: 12, flexShrink: 0 },
-  participantList: { display: 'flex', gap: 8, overflowX: 'auto' },
-  participantChip: { display: 'flex', alignItems: 'center', gap: 6, background: '#1a1a1e', border: '1px solid #2a2a30', borderRadius: 99, padding: '4px 10px', fontSize: 12, color: '#ccc', whiteSpace: 'nowrap' },
-  chipDot: { width: 7, height: 7, borderRadius: '50%', flexShrink: 0 },
-  youBadge: { background: '#534AB7', color: '#fff', fontSize: 10, padding: '1px 5px', borderRadius: 4 },
+//   participantBar: { background: '#111114', borderTop: '1px solid #2a2a30', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, overflowX: 'auto' },
+//   participantBarLabel: { color: '#555', fontSize: 12, flexShrink: 0 },
+//   participantList: { display: 'flex', gap: 8, overflowX: 'auto' },
+//   participantChip: { display: 'flex', alignItems: 'center', gap: 6, background: '#1a1a1e', border: '1px solid #2a2a30', borderRadius: 99, padding: '4px 10px', fontSize: 12, color: '#ccc', whiteSpace: 'nowrap' },
+//   chipDot: { width: 7, height: 7, borderRadius: '50%', flexShrink: 0 },
+//   youBadge: { background: '#534AB7', color: '#fff', fontSize: 10, padding: '1px 5px', borderRadius: 4 },
   chatPanel: { width: '40%', background: '#111114', borderLeft: '1px solid #2a2a30', display: 'flex', flexDirection: 'column', flexShrink: 0 },
   chatHeader: { padding: '12px 16px', borderBottom: '1px solid #2a2a30', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   chatTitle: { color: '#fff', fontSize: 14, fontWeight: 600 },

@@ -21,11 +21,76 @@ interface ChatMessage {
   timestamp: number
 }
 
+function ChatPanel({ messages, username, input, setInput, sendMessage, onClose, chatEndRef, fullscreen }: {
+  messages: ChatMessage[]
+  username: string
+  input: string
+  setInput: (v: string) => void
+  sendMessage: () => void
+  onClose: () => void
+  chatEndRef: React.RefObject<HTMLDivElement | null>
+  fullscreen: boolean
+}) {
+  return (
+    <div style={{ ...(fullscreen ? styles.chatFullscreen : styles.chatPanel) }}>
+      <div style={styles.chatHeader}>
+        <span style={styles.chatTitle}>💬 Chat</span>
+        <button style={styles.closeChatBtn} onClick={onClose}>
+          {fullscreen ? '← Back' : '✕'}
+        </button>
+      </div>
+      <div style={styles.messageList}>
+        {messages.length === 0 && (
+          <p style={styles.noMessages}>No messages yet. Say hi! 👋</p>
+        )}
+        {messages.map(msg => {
+          const isOwn = msg.username === username
+          return (
+            <div key={msg.id} style={{
+              ...styles.messageItem,
+              alignSelf: isOwn ? 'flex-start' : 'flex-end',
+              alignItems: isOwn ? 'flex-start' : 'flex-end',
+            }}>
+              <div style={styles.messageMeta}>
+                {isOwn && <span style={{ ...styles.messageUsername, color: '#7C74E0' }}>You</span>}
+                {!isOwn && <span style={{ ...styles.messageUsername, color: '#1D9E75' }}>{msg.username}</span>}
+                <span style={styles.messageTime}>
+                  {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+              <div style={{
+                ...styles.messageBubble,
+                background: isOwn ? '#1a1a1e' : '#534AB7',
+                borderRadius: isOwn ? '12px 12px 12px 2px' : '12px 12px 2px 12px',
+              }}>
+                {msg.content}
+              </div>
+            </div>
+          )
+        })}
+        <div ref={chatEndRef} />
+      </div>
+      <div style={styles.chatInput}>
+        <input
+          style={styles.chatInputField}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && sendMessage()}
+          placeholder="Type a message..."
+          maxLength={500}
+        />
+        <button style={styles.sendBtn} onClick={sendMessage}>➤</button>
+      </div>
+    </div>
+  )
+}
+
 function ActiveRoom({ roomId, username }: { roomId: string, username: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [showChat, setShowChat] = useState(false)
   const [unread, setUnread] = useState(0)
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
   const socketRef = useRef<Socket | null>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
@@ -36,6 +101,12 @@ function ActiveRoom({ roomId, username }: { roomId: string, username: string }) 
     ],
     { onlySubscribed: false }
   )
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken')
@@ -75,67 +146,46 @@ function ActiveRoom({ roomId, username }: { roomId: string, username: string }) 
     setInput('')
   }
 
+  // Mobile — chat opens fullscreen, hides voice
+  if (isMobile && showChat) {
+    return (
+      <div style={styles.activeRoom}>
+        <ChatPanel
+          messages={messages}
+          username={username}
+          input={input}
+          setInput={setInput}
+          sendMessage={sendMessage}
+          onClose={() => setShowChat(false)}
+          chatEndRef={chatEndRef}
+          fullscreen={true}
+        />
+      </div>
+    )
+  }
+
   return (
     <div style={styles.activeRoom}>
       <div style={styles.mainArea}>
-
-        {/* Voice grid using LiveKit GridLayout */}
+        {/* Voice grid */}
         <div style={{ ...styles.voiceArea, width: showChat ? '60%' : '100%' }}>
           <GridLayout tracks={tracks} style={{ height: '100%' }}>
             <ParticipantTile />
           </GridLayout>
         </div>
 
-        {/* Chat panel */}
-        {showChat && (
-          <div style={styles.chatPanel}>
-            <div style={styles.chatHeader}>
-              <span style={styles.chatTitle}>💬 Chat</span>
-              <button style={styles.closeChatBtn} onClick={() => setShowChat(false)}>✕</button>
-            </div>
-            <div style={styles.messageList}>
-              {messages.length === 0 && (
-                <p style={styles.noMessages}>No messages yet. Say hi! 👋</p>
-              )}
-              {messages.map(msg => {
-                const isOwn = msg.username === username
-                return (
-                  <div key={msg.id} style={{
-                    ...styles.messageItem,
-                    alignSelf: isOwn ? 'flex-start' : 'flex-end',
-                    alignItems: isOwn ? 'flex-start' : 'flex-end',
-                  }}>
-                    <div style={styles.messageMeta}>
-                      {isOwn && <span style={{ ...styles.messageUsername, color: '#7C74E0' }}>You</span>}
-                      {!isOwn && <span style={{ ...styles.messageUsername, color: '#1D9E75' }}>{msg.username}</span>}
-                      <span style={styles.messageTime}>
-                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                    <div style={{
-                      ...styles.messageBubble,
-                      background: isOwn ? '#1a1a1e' : '#534AB7',
-                      borderRadius: isOwn ? '12px 12px 12px 2px' : '12px 12px 2px 12px',
-                    }}>
-                      {msg.content}
-                    </div>
-                  </div>
-                )
-              })}
-              <div ref={chatEndRef} />
-            </div>
-            <div style={styles.chatInput}>
-              <input
-                style={styles.chatInputField}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && sendMessage()}
-                placeholder="Type a message..."
-                maxLength={500}
-              />
-              <button style={styles.sendBtn} onClick={sendMessage}>➤</button>
-            </div>
-          </div>
+        {/* Chat panel — desktop only */}
+        {showChat && !isMobile && (
+          <ChatPanel
+            messages={messages}
+            username={username}
+            input={input}
+            setInput={setInput}
+            sendMessage={sendMessage}
+            onClose={() => setShowChat(false)}
+            chatEndRef={chatEndRef}
+            fullscreen={false}
+          />
         )}
       </div>
 
@@ -219,9 +269,10 @@ const styles: Record<string, React.CSSProperties> = {
   mainArea: { display: 'flex', flex: 1, overflow: 'hidden' },
   voiceArea: { display: 'flex', flexDirection: 'column', transition: 'width 0.3s', overflow: 'hidden', flex: 1 },
   chatPanel: { width: '40%', background: '#111114', borderLeft: '1px solid #2a2a30', display: 'flex', flexDirection: 'column', flexShrink: 0 },
-  chatHeader: { padding: '12px 16px', borderBottom: '1px solid #2a2a30', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+  chatFullscreen: { flex: 1, background: '#111114', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  chatHeader: { padding: '12px 16px', borderBottom: '1px solid #2a2a30', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 },
   chatTitle: { color: '#fff', fontSize: 14, fontWeight: 600 },
-  closeChatBtn: { background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 16 },
+  closeChatBtn: { background: 'none', border: 'none', color: '#7C74E0', cursor: 'pointer', fontSize: 14, fontWeight: 500 },
   messageList: { flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 10 },
   noMessages: { color: '#555', fontSize: 13, marginTop: 24 },
   messageBubble: { fontSize: 13, color: '#fff', lineHeight: 1.5, wordBreak: 'break-word', padding: '8px 12px', maxWidth: '80%' },
@@ -229,9 +280,9 @@ const styles: Record<string, React.CSSProperties> = {
   messageMeta: { display: 'flex', alignItems: 'center', gap: 8 },
   messageUsername: { fontSize: 12, fontWeight: 600 },
   messageTime: { fontSize: 11, color: '#555' },
-  chatInput: { padding: 12, borderTop: '1px solid #2a2a30', display: 'flex', gap: 8 },
+  chatInput: { padding: 12, borderTop: '1px solid #2a2a30', display: 'flex', gap: 8, flexShrink: 0 },
   chatInputField: { flex: 1, background: '#1a1a1e', border: '1px solid #2a2a30', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' },
-  sendBtn: { background: '#534AB7', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', fontSize: 16 },
+  sendBtn: { background: '#534AB7', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 16, flexShrink: 0 },
   bottomBar: { display: 'flex', alignItems: 'center', borderTop: '1px solid #2a2a30', flexShrink: 0 },
   controlBar: { flex: 1 },
   chatToggleBtn: { border: '1px solid #2a2a30', borderRadius: 8, padding: '8px 16px', color: '#fff', fontSize: 13, cursor: 'pointer', margin: '0 12px', display: 'flex', alignItems: 'center', gap: 6 },

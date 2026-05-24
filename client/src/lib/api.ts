@@ -1,9 +1,7 @@
 import axios from 'axios'
 
-const isProd = import.meta.env.PROD
-
 const api = axios.create({
-  baseURL: isProd
+  baseURL: import.meta.env.PROD
     ? import.meta.env.VITE_API_URL
     : '/api'
 })
